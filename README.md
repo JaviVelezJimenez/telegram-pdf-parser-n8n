@@ -17,7 +17,9 @@ Puedes importar este flujo directamente en tu instancia de n8n usando el archivo
 
 ### Vista general del flujo
 
-![Ejemplo del flujo](./assets/ejemplo-captura-flujo.png)
+Capturas destacadas
+
+Consulta la carpeta /assets para ver el proceso visual paso a paso.
 
 ## ⚙️ Requisitos
 
