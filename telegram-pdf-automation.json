@@ -1,0 +1,533 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.pdf.co/v1/file/upload",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key\t",
+              "value": "javivelez42@gmail.com_1Lxa7jf94k03tIRpevfJcFLLXrXNzDzavtmp9q5UMWFLswpF5hWAdnZ3Rw20hOAy"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "file",
+              "inputDataFieldName": "data"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -100,
+        -160
+      ],
+      "id": "61ea88a8-86e5-4836-abfc-5b3821086283",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.pdf.co/v1/pdf/convert/to/text",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "javivelez42@gmail.com_1Lxa7jf94k03tIRpevfJcFLLXrXNzDzavtmp9q5UMWFLswpF5hWAdnZ3Rw20hOAy"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "url",
+              "value": "={{$json[\"url\"]}}"
+            },
+            {
+              "name": "inline",
+              "value": "true"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        140,
+        -40
+      ],
+      "id": "de04a7fa-3707-4ae7-b3ce-f86847faa721",
+      "name": "HTTP Request1"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4.1",
+          "mode": "list",
+          "cachedResultName": "GPT-4.1"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=Extrae del siguiente texto los siguientes datos en formato JSON:\n\n- fecha (en formato YYYY-MM-DD)\n- monto (como número con decimales)\n- proveedor (nombre del proveedor o empresa)\n- NIF (número de identificación fiscal, si aparece)\n- forma_pago (efectivo, tarjeta, transferencia, etc.)\n\nTexto del recibo:\n{{ $json[\"body\"] }}\n\nDevuelve sólo el JSON con las claves: fecha, monto, proveedor, NIF, formapago\n"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        380,
+        80
+      ],
+      "id": "b3d6b8fd-f42c-4c35-94ad-dd350eae0b3b",
+      "name": "Message a model",
+      "credentials": {
+        "openAiApi": {
+          "id": "811bPA74zfkJVw99",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "625f4210-aa4a-497a-af8b-9a17dbaacf28",
+              "name": "jsonText",
+              "value": "={{$json[\"message\"][\"content\"]}}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        720,
+        160
+      ],
+      "id": "7c84f701-9c77-4c59-b08d-8a5476988256",
+      "name": "Extraer JSON de message.content"
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.map(item => {\n  const raw = item.json.jsonText;\n\n  // 1. Limpia el string eliminando comillas triples y ```json\n  const clean = raw\n    .replace(/```json/g, '')\n    .replace(/```/g, '')\n    .trim();\n\n  // 2. Parsea el texto limpio a objeto JSON real\n  let parsed;\n  try {\n    parsed = JSON.parse(clean);\n  } catch (error) {\n    throw new Error(\"Error al parsear el JSON: \" + error.message);\n  }\n\n  // 3. Renombra las claves\n  const final = {\n    \"Fecha de cobro\": parsed.fecha,\n    \"Dinero\": parsed.monto,\n    \"Proveedor\": parsed.proveedor,\n    \"NIF\": parsed.NIF,\n    \"Forma de pago\": parsed.formapago\n  };\n  return { json: final };\n});\n\n\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        940,
+        260
+      ],
+      "id": "12cb0b5f-10d3-4d21-a69c-a46fd9d968db",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1AAdMMmcEIseougcesUTVeFmUo0TQvAXOJ7PU4O7vASo",
+          "mode": "list",
+          "cachedResultName": "Factura",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1AAdMMmcEIseougcesUTVeFmUo0TQvAXOJ7PU4O7vASo/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Hoja 1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1AAdMMmcEIseougcesUTVeFmUo0TQvAXOJ7PU4O7vASo/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Fecha de cobro": "={{$json[\"Fecha de cobro\"]}}",
+            "Dinero": "={{$json[\"Dinero\"]}}",
+            "Proveedor": "={{$json[\"Proveedor\"]}}",
+            "NIF": "={{$json[\"NIF\"]}}",
+            "Forma de pago": "={{$json[\"Forma de pago\"]}}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Fecha de cobro",
+              "displayName": "Fecha de cobro",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Dinero",
+              "displayName": "Dinero",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Proveedor",
+              "displayName": "Proveedor",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "NIF",
+              "displayName": "NIF",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Forma de pago",
+              "displayName": "Forma de pago",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        1160,
+        320
+      ],
+      "id": "272823bb-c220-4b6a-a158-3aa67951e98b",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleApi": {
+          "id": "0wwTyT3Uj5tsr2tg",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {
+          "download": true
+        }
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -620,
+        -220
+      ],
+      "id": "eece7c98-12ae-4385-89a2-05dac271d46c",
+      "name": "Telegram Trigger",
+      "webhookId": "b5c1bfa3-7f37-413d-af75-e62365c7148e",
+      "credentials": {
+        "telegramApi": {
+          "id": "bgYCMTP6nEmAruEc",
+          "name": "Telegram account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{$node[\"Telegram Trigger\"].json[\"message\"][\"chat\"][\"id\"]}}",
+        "text": "✅ Archivo procesado correctamente y guardado en Google Sheets.",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1660,
+        480
+      ],
+      "id": "1dc7ffc5-9fb1-4b14-963e-8d07337e3559",
+      "name": "Send a text message",
+      "webhookId": "04ba18a5-9e91-47c4-b8e9-c73ba9f9b16d",
+      "credentials": {
+        "telegramApi": {
+          "id": "bgYCMTP6nEmAruEc",
+          "name": "Telegram account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "9a0c8061-b13b-4542-a046-9ed447d1602f",
+              "leftValue": "={{ $binary.data.mimeType }}",
+              "rightValue": "application/pdf",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -400,
+        -220
+      ],
+      "id": "2d6a8d74-b7d1-4312-a9d5-c37c40f8bec4",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "chatId": "={{$json[\"message\"][\"chat\"][\"id\"]}}",
+        "text": "⚠️ Solo se aceptan archivos PDF. Por favor, intenta de nuevo.",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -420,
+        60
+      ],
+      "id": "af309235-caeb-4a0a-ad96-a41257e8c7bf",
+      "name": "Send a text message1",
+      "webhookId": "deb0fb3c-d4bb-4b7a-8549-a0e3bc71d856",
+      "credentials": {
+        "telegramApi": {
+          "id": "bgYCMTP6nEmAruEc",
+          "name": "Telegram account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "648797b4-54c1-4a40-9566-891f1a70f875",
+              "leftValue": "={{$json}}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1400,
+        400
+      ],
+      "id": "84bf0cda-c8d2-4746-9dc7-3053a1d7975a",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "chatId": "={{$node[\"Telegram Trigger\"].json[\"message\"][\"chat\"][\"id\"]}}",
+        "text": "❌ No se pudo guardar el registro en Google Sheets. Verifica que el documento esté correctamente formateado o vuelve a intentarlo más tarde.",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1160,
+        620
+      ],
+      "id": "6661908a-5b80-431e-82d1-4f81154e4cf6",
+      "name": "Send a text message2",
+      "webhookId": "489d00ab-30ab-40ea-9239-6ac242922142",
+      "credentials": {
+        "telegramApi": {
+          "id": "bgYCMTP6nEmAruEc",
+          "name": "Telegram account 2"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Extraer JSON de message.content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extraer JSON de message.content": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send a text message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send a text message2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "fcf6bd65-9565-45a5-b870-7b1c1d740df2",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "09724e8ecee09f2ec95bc8fbb798598675fa968b9134e4e3b020ca7392f960df"
+  },
+  "id": "pvJObws4NoaYjPDl",
+  "tags": []
+}
